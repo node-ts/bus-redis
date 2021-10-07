@@ -1,0 +1,100 @@
+{
+  "name": "@node-ts/bus-redis",
+  "description": "A redis transport adapter for @node-ts/bus-core.",
+  "version": "0.1.5",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "repository": "github:node-ts/bus.git",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc --project tsconfig.json --declaration",
+    "lint": "tslint --project tsconfig.json 'src/**/*.ts'",
+    "lint:fix": "yarn lint --fix",
+    "test": "jest --collect-coverage",
+    "test:unit": "jest \"(src\\/.+\\.|/)spec\\.ts$\"",
+    "test:integration": "jest --runInBand \"(src\\/.+\\.|/)integration\\.ts$\"",
+    "test:watch": "jest --watch"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@node-ts/bus-messages": "^0.3.2",
+    "ioredis": "^4.27.7",
+    "modest-queue": "^0.4.1",
+    "tslib": "^1.9.3",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "@node-ts/bus-core": "^0.6.7",
+    "@node-ts/code-standards": "^0.0.10",
+    "@node-ts/logger-core": "^0.0.13",
+    "@types/faker": "^4.1.5",
+    "@types/ioredis": "^4.26.6",
+    "@types/uuid": "^3.4.4",
+    "esbuild": "^0.13.4",
+    "esbuild-jest": "^0.5.0",
+    "faker": "^4.1.0",
+    "inversify": "^5.0.1",
+    "jest": "^27.2.4",
+    "reflect-metadata": "^0.1.13",
+    "typemoq": "^2.1.0",
+    "typescript": "^4.3.5"
+  },
+  "peerDependencies": {
+    "@node-ts/bus-core": "^0.6.6",
+    "@node-ts/logger-core": "^0.0.13",
+    "inversify": "^5.0.1",
+    "reflect-metadata": "^0.1.13"
+  },
+  "jest": {
+    "testTimeout": 5000,
+    "setupFilesAfterEnv": [
+      "<rootDir>/test/setup.ts"
+    ],
+    "collectCoverageFrom": [
+      "**/*.ts",
+      "!**/node_modules/**",
+      "!**/vendor/**",
+      "!**/dist/**",
+      "!**/bus-messages/**",
+      "!**/error/*"
+    ],
+    "testRegex": "(src\\/.+\\.|/)(integration|spec)\\.ts$",
+    "transform": {
+      "^.+\\.tsx?$": [
+        "esbuild-jest",
+        {
+          "sourcemap": true,
+          "loaders": {
+            ".spec.ts": "tsx",
+            ".integration.ts": "tsx"
+          }
+        }
+      ]
+    },
+    "testEnvironment": "node",
+    "testPathIgnorePatterns": [
+      "node_modules/",
+      "dist/",
+      "bus-test/"
+    ]
+  },
+  "keywords": [
+    "esb",
+    "redis",
+    "typescript",
+    "enterprise integration patterns",
+    "bus",
+    "messaging",
+    "microservices",
+    "distributed systems",
+    "framework",
+    "enterprise framework",
+    "CQRS",
+    "ES",
+    "NServiceBus",
+    "Mule ESB"
+  ]
+}

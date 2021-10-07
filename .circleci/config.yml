@@ -1,0 +1,63 @@
+version: 2
+
+defaults: &defaults
+  working_directory: ~/repo
+  docker:
+    - image: circleci/node:14.18.0
+
+jobs:
+  build:
+    <<: *defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Install dependencies
+          command: yarn
+      - run:
+          name: Build
+          command: yarn run build
+      - run:
+          name: Lint
+          command: yarn run lint
+      - run:
+          name: Unit Test
+          command: yarn run test:unit
+      - run:
+          name: Integration Test
+          command: yarn run test:integration
+
+  deploy:
+    <<: *defaults
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Install dependencies
+          command: yarn
+      - run:
+          name: Build
+          command: yarn run build
+      # - run:
+      #     name: Authenticate with registry
+      #     command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
+      # - run:
+      #     name: Publish
+      #     command: npx lerna publish from-package --yes
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build:
+          filters:
+            branches:
+              ignore:
+                - master
+                - gh-pages
+      - deploy:
+          filters:
+            branches:
+              only: master
