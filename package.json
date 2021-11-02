@@ -5,16 +5,13 @@
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "repository": "github:node-ts/bus.git",
+  "repository": "github:node-ts/bus-redis.git",
   "scripts": {
     "clean": "rm -rf dist",
     "build": "tsc --project tsconfig.json --declaration",
+    "build:watch": "yarn run build --incremental --watch --preserveWatchOutput",
     "lint": "tslint --project tsconfig.json 'src/**/*.ts'",
-    "lint:fix": "yarn lint --fix",
-    "test": "jest --collect-coverage",
-    "test:unit": "jest \"(src\\/.+\\.|/)spec\\.ts$\"",
-    "test:integration": "jest --runInBand \"(src\\/.+\\.|/)integration\\.ts$\"",
-    "test:watch": "jest --watch"
+    "lint:fix": "yarn lint --fix"
   },
   "publishConfig": {
     "access": "public"
@@ -27,59 +24,19 @@
     "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "@node-ts/bus-core": "^0.6.7",
+    "@node-ts/bus-core": "^1.0.0",
+    "@node-ts/bus-test": "^0.0.1",
     "@node-ts/code-standards": "^0.0.10",
-    "@node-ts/logger-core": "^0.0.13",
     "@types/faker": "^4.1.5",
     "@types/ioredis": "^4.26.6",
     "@types/uuid": "^3.4.4",
-    "esbuild": "^0.13.4",
-    "esbuild-jest": "^0.5.0",
     "faker": "^4.1.0",
-    "inversify": "^5.0.1",
-    "jest": "^27.2.4",
     "reflect-metadata": "^0.1.13",
     "typemoq": "^2.1.0",
     "typescript": "^4.3.5"
   },
   "peerDependencies": {
-    "@node-ts/bus-core": "^0.6.6",
-    "@node-ts/logger-core": "^0.0.13",
-    "inversify": "^5.0.1",
-    "reflect-metadata": "^0.1.13"
-  },
-  "jest": {
-    "testTimeout": 5000,
-    "setupFilesAfterEnv": [
-      "<rootDir>/test/setup.ts"
-    ],
-    "collectCoverageFrom": [
-      "**/*.ts",
-      "!**/node_modules/**",
-      "!**/vendor/**",
-      "!**/dist/**",
-      "!**/bus-messages/**",
-      "!**/error/*"
-    ],
-    "testRegex": "(src\\/.+\\.|/)(integration|spec)\\.ts$",
-    "transform": {
-      "^.+\\.tsx?$": [
-        "esbuild-jest",
-        {
-          "sourcemap": true,
-          "loaders": {
-            ".spec.ts": "tsx",
-            ".integration.ts": "tsx"
-          }
-        }
-      ]
-    },
-    "testEnvironment": "node",
-    "testPathIgnorePatterns": [
-      "node_modules/",
-      "dist/",
-      "bus-test/"
-    ]
+    "@node-ts/bus-core": "^1.0.0"
   },
   "keywords": [
     "esb",
