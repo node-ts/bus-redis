@@ -107,9 +107,9 @@ describe('RedisTransport', () => {
       await bus.dispose()
     })
     it('fails when publishing a message', async () => {
-      // spy on zadd, which is how the underlying queue lib pushes messages to a queue
+      // spy on zadd, which is how the underlying queue lib pushes messages to the queue
       const queuePushSpy = jest.spyOn(redisTransport['connection'], 'zadd')
-      // make it fail for the 3 attempts that a message will try to publish
+      // make it fail for the 3 attempts that a message will try to get added to the queue
       queuePushSpy
         .mockImplementationOnce(() => {throw new Error('zadd failed 1st')})
         .mockImplementationOnce(() => {throw new Error('zadd failed 2nd')})
@@ -127,8 +127,9 @@ describe('RedisTransport', () => {
           attribute2: 2
         }
       }
-      // send and expect it to throw an error with the message it failed to send
+      // expect it to try 3 times before failing
       await expect(bus.send(testCommand, messageOptions)).rejects.toThrow(/^Failed to publish message.*/)
+      expect(queuePushSpy).toHaveBeenCalledTimes(3)
       queuePushSpy.mockClear()
     })
   })
