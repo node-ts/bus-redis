@@ -221,7 +221,7 @@ export class RedisTransport implements Transport<QueueMessage> {
       await queue.publish(payload)
       await queue.dispose()
     } catch (e) {
-      return this.publishMessageToQueue(payload, queueName, attempt++)
+      return this.publishMessageToQueue(payload, queueName, ++attempt)
     }
   }
 }

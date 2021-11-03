@@ -1,9 +1,12 @@
 import { RedisTransport } from './redis-transport'
 import { RedisTransportConfiguration } from './redis-transport-configuration'
-import { TestSystemMessage, transportTests } from '@node-ts/bus-test'
-import { DefaultHandlerRegistry, JsonSerializer, MessageSerializer, sleep } from '@node-ts/bus-core'
+import { HandleChecker, TestCommand, TestSystemMessage, transportTests } from '@node-ts/bus-test'
+import { Bus, BusInstance, DefaultHandlerRegistry, handlerFor, JsonSerializer, MessageSerializer, sleep } from '@node-ts/bus-core'
 import { Connection, ModestQueue } from 'modest-queue'
 import { Message, MessageAttributes } from '@node-ts/bus-messages'
+import { Mock } from 'typemoq'
+import { EventEmitter } from 'stream'
+import uuid from 'uuid'
 
 const configuration: RedisTransportConfiguration = {
   queueName: 'node-ts/bus-redis-test',
@@ -34,6 +37,7 @@ describe('RedisTransport', () => {
 
   const systemMessageTopicIdentifier = TestSystemMessage.NAME
   const message = new TestSystemMessage()
+
   const publishSystemMessage = async (systemMessageAttribute: string) => {
     const attributes = { systemMessage: systemMessageAttribute }
 
@@ -87,4 +91,47 @@ describe('RedisTransport', () => {
     systemMessageTopicIdentifier,
     readAllFromDeadLetterQueue
   )
+
+  describe("when a queue has subscribed to a message of interest but the queue is not accessible to be published to", () => {
+    let bus: BusInstance
+    beforeAll(async () => {
+      bus = await Bus.configure()
+        .withTransport(redisTransport)
+        .withHandler(handlerFor(
+          TestCommand,
+          () => {}
+        ))
+        .initialize()
+
+      await bus.start()
+    })
+    afterAll(async () => {
+      await bus.dispose()
+    })
+    it('fails when publishing a message', async () => {
+      // spy on zadd, which is how the underlying queue lib pushes messages to a queue
+      const queuePushSpy = jest.spyOn(redisTransport['connection'], 'zadd')
+      // make it fail for the 3 attempts that a message will try to publish
+      queuePushSpy
+        .mockImplementationOnce(() => {throw new Error('zadd failed 1st')})
+        .mockImplementationOnce(() => {throw new Error('zadd failed 2nd')})
+        .mockImplementationOnce(() => {throw new Error('zadd failed 3rd')})
+
+      const testCommand = new TestCommand(uuid.v4(), new Date())
+      const messageOptions: MessageAttributes = {
+        correlationId: uuid.v4(),
+        attributes: {
+          attribute1: 'a',
+          attribute2: 1
+        },
+        stickyAttributes: {
+          attribute1: 'b',
+          attribute2: 2
+        }
+      }
+      // send and expect it to throw an error with the message it failed to send
+      await expect(bus.send(testCommand, messageOptions)).rejects.toThrow(/^Failed to publish message.*/)
+      queuePushSpy.mockClear()
+    })
+  })
 })
