@@ -1,5 +1,5 @@
 import { Event, Command, Message, MessageAttributes, MessageAttributeMap } from '@node-ts/bus-messages'
-import { Transport, TransportMessage, MessageSerializer, HandlerRegistry, Logger, CoreDependencies } from '@node-ts/bus-core'
+import { Transport, TransportMessage, Logger, CoreDependencies } from '@node-ts/bus-core'
 import Redis from 'ioredis'
 import { RedisTransportConfiguration } from './redis-transport-configuration'
 import { ModestQueue, Message as QueueMessage } from 'modest-queue'
@@ -145,18 +145,12 @@ export class RedisTransport implements Transport<QueueMessage> {
    * In this way, if another redis-transport publishes a message this queue would also get the message.
    */
   private async subscribeToMessagesOfInterest (): Promise<void> {
-    const queueSubscriptionPromises = this.coreDependencies.handlerRegistry.getResolvers()
-      .filter(subscription => !!subscription.messageType)
-      .map(async subscription => {
-        if (subscription.messageType) {
-          const messageCtor = subscription.messageType
-          return this.connection.sadd(
-            `${this.subscriptionsKeyPrefix}${(new messageCtor() as Message).$name}`,
-            this.configuration.queueName
-          )
-        } else {
-          throw new Error(`Unable to messageType to this queue: ${subscription}`)
-        }
+    const queueSubscriptionPromises = this.coreDependencies.handlerRegistry.getMessageNames()
+      .map(async messageName => {
+        return this.connection.sadd(
+          `${this.subscriptionsKeyPrefix}${messageName}`,
+          this.configuration.queueName
+        )
       })
     this.logger.info('Subscribe queue to messages in HandlerRegistry')
     await Promise.all(queueSubscriptionPromises)
