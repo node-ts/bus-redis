@@ -1,11 +1,9 @@
 import { RedisTransport } from './redis-transport'
 import { RedisTransportConfiguration } from './redis-transport-configuration'
-import { HandleChecker, TestCommand, TestSystemMessage, transportTests } from '@node-ts/bus-test'
+import { TestCommand, TestSystemMessage, transportTests } from '@node-ts/bus-test'
 import { Bus, BusInstance, DefaultHandlerRegistry, handlerFor, JsonSerializer, MessageSerializer, sleep } from '@node-ts/bus-core'
 import { Connection, ModestQueue } from 'modest-queue'
 import { Message, MessageAttributes } from '@node-ts/bus-messages'
-import { Mock } from 'typemoq'
-import { EventEmitter } from 'stream'
 import uuid from 'uuid'
 
 const configuration: RedisTransportConfiguration = {
