@@ -1,164 +1,136 @@
 import { RedisTransport } from './redis-transport'
-import {
-  TestContainer,
-  TestCommandHandler,
-  TestPoisonedMessageHandler,
-  TestPoisonedMessage,
-  HANDLE_CHECKER,
-  HandleChecker,
-  TestFailMessageHandler,
-  TestCommand,
-  TestFailMessage
-} from '../test'
-import { BUS_REDIS_SYMBOLS } from './bus-redis-symbols'
-import { BUS_SYMBOLS, ApplicationBootstrap, Bus } from '@node-ts/bus-core'
 import { RedisTransportConfiguration } from './redis-transport-configuration'
-import * as faker from 'faker'
-import { TestSystemMessageHandler } from '../test/test-system-message-handler'
-import { Mock, IMock, It, Times } from 'typemoq'
-import * as uuid from 'uuid'
-import { MessageAttributes } from '@node-ts/bus-messages'
-import { TestSystemMessage } from '../test/test-system-message'
-import { QueueStats } from 'modest-queue'
-
-jest.setTimeout(30000)
-
-export async function sleep (timeoutMs: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, timeoutMs))
-}
-
+import { TestCommand, TestSystemMessage, transportTests } from '@node-ts/bus-test'
+import { Bus, BusInstance, DefaultHandlerRegistry, handlerFor, JsonSerializer, MessageSerializer, sleep } from '@node-ts/bus-core'
+import { Connection, ModestQueue } from 'modest-queue'
+import { Message, MessageAttributes } from '@node-ts/bus-messages'
+import uuid from 'uuid'
 
 const configuration: RedisTransportConfiguration = {
   queueName: 'node-ts/bus-redis-test',
   connectionString: 'redis://127.0.0.1:6379',
-  maxRetries: 3
+  maxRetries: 10
 }
 
 describe('RedisTransport', () => {
-  let bus: Bus
-  let sut: RedisTransport
-  let container: TestContainer
-  let bootstrap: ApplicationBootstrap
-  let handleChecker: IMock<HandleChecker>
+  jest.setTimeout(30000)
 
-  beforeAll(async () => {
-    handleChecker = Mock.ofType<HandleChecker>()
-    container = new TestContainer()
-    container.bind(HANDLE_CHECKER).toConstantValue(handleChecker.object)
-    container.bind(BUS_REDIS_SYMBOLS.TransportConfiguration).toConstantValue(configuration)
+  const redisTransport = new RedisTransport(configuration)
+  const messageSerializer = new MessageSerializer(
+    new JsonSerializer(),
+    new DefaultHandlerRegistry()
+  )
 
-    bus = container.get(BUS_SYMBOLS.Bus)
-    sut = container.get(BUS_SYMBOLS.Transport)
+  async function purgeQueue() {
+    const modestQueue = new ModestQueue({
+      queueName: configuration.queueName,
+      connectionString: configuration.connectionString,
+      withScheduler: false,
+      withDelayedScheduler: false
+    })
+    await modestQueue.initialize()
+    await modestQueue.destroyQueue()
+    await modestQueue.dispose()
+  }
 
-    bootstrap = container.get<ApplicationBootstrap>(BUS_SYMBOLS.ApplicationBootstrap)
-    bootstrap.registerHandler(TestPoisonedMessageHandler)
-    bootstrap.registerHandler(TestCommandHandler)
-    bootstrap.registerHandler(TestSystemMessageHandler)
+  const systemMessageTopicIdentifier = TestSystemMessage.NAME
+  const message = new TestSystemMessage()
 
-    bootstrap.registerHandler(TestFailMessageHandler)
+  const publishSystemMessage = async (systemMessageAttribute: string) => {
+    const attributes = { systemMessage: systemMessageAttribute }
 
-    await bootstrap.initialize(container)
-  })
-
-  afterAll(async () => {
-    await bootstrap.dispose()
-  })
-
-  describe('when sending a command', () => {
-    const testCommand = new TestCommand(uuid.v4(), new Date())
-    const messageOptions: MessageAttributes = {
-      correlationId: faker.random.uuid(),
-      attributes: {
-        attribute1: 'a',
-        attribute2: 1
-      },
-      stickyAttributes: {
-        attribute1: 'b',
-        attribute2: 2
-      }
+    const payload = {
+      message: messageSerializer.serialize(message),
+      correlationId: undefined,
+      attributes: attributes,
+      stickyAttributes: {}
     }
 
-    beforeAll(async () => {
-      await bus.send(testCommand, messageOptions)
-    })
-    afterAll(async () => {
-      await sut['queue'].destroyQueue()
-    })
+    redisTransport['queue'].publish(JSON.stringify(payload))
+  }
+  /**
+   * pops all messages from the DLQ recursively until there are no more
+   */
+  async function pullAllFromDLQ(messages = []): Promise<{ message: Message, attributes: MessageAttributes}[]> {
+    const modestQueue = redisTransport['queue']
+    const dlqAddress = modestQueue['deadLetterQueue']
+    const redisConnection = modestQueue['connection'] as Connection
+    const queueStats = await modestQueue.queueStats()
+    if (queueStats.dlq === 0) {
+      return messages.map(msg => {
+        const rawMessage = JSON.parse(msg)
+        const { message, ...attributes} = JSON.parse(rawMessage.message)
+        const domainMessage = JSON.parse(message)
+        const dlqMessage =  {
+          message: domainMessage,
+          attributes
+        }
+        return dlqMessage
+      })
+    }
+    const message = await redisConnection.lpop(dlqAddress)
+    return pullAllFromDLQ(messages.concat(message))
+  }
 
-    it('it should receive and dispatch to the handler', async () => {
-      await sleep(2000)
-      handleChecker.verify(
-        h => h.check(It.isObjectWith({...testCommand}), It.isObjectWith(messageOptions)),
-        Times.once()
-      )
-    })
-    it(`The queue stats should be empty as all messages have been completed`, async () => {
-      const completedCount = await sut['queue'].queueStats()
-      expect(completedCount).toEqual({dlq: 0, inflight: 0, queue:0, delayed: 0})
-    })
+  const readAllFromDeadLetterQueue = async () => {
+    // required so that there is time for the message to be put on the dlq after retries
+    await sleep(1000)
+    const allFromDLQ = await pullAllFromDLQ()
+    return allFromDLQ
+  }
+
+  beforeAll(async () => {
+    await purgeQueue()
   })
 
-  describe('when retrying a poisoned message', () => {
-    const poisonedMessage = new TestPoisonedMessage(faker.random.uuid())
+  transportTests(
+    redisTransport,
+    publishSystemMessage,
+    systemMessageTopicIdentifier,
+    readAllFromDeadLetterQueue
+  )
+
+  describe("when a queue has subscribed to a message of interest but the queue is not accessible to be published to", () => {
+    let bus: BusInstance
     beforeAll(async () => {
-      await bus.publish(poisonedMessage)
-      await sleep(2000)
+      bus = await Bus.configure()
+        .withTransport(redisTransport)
+        .withHandler(handlerFor(
+          TestCommand,
+          () => {}
+        ))
+        .initialize()
+
+      await bus.start()
     })
     afterAll(async () => {
-      await sut['queue'].destroyQueue()
+      await bus.dispose()
     })
+    it('fails when publishing a message', async () => {
+      // spy on zadd, which is how the underlying queue lib pushes messages to the queue
+      const queuePushSpy = jest.spyOn(redisTransport['connection'], 'zadd')
+      // make it fail for the 3 attempts that a message will try to get added to the queue
+      queuePushSpy
+        .mockImplementationOnce(() => {throw new Error('zadd failed 1st')})
+        .mockImplementationOnce(() => {throw new Error('zadd failed 2nd')})
+        .mockImplementationOnce(() => {throw new Error('zadd failed 3rd')})
 
-    it('it should attempt to process the message configuration.maxRetries times', () => {
-      handleChecker.verify(
-        h => h.check(It.is<TestPoisonedMessage>(m => m.id === poisonedMessage.id), It.isAny()),
-        Times.exactly(configuration.maxRetries!)
-      )
-    })
-
-    it('it should have been moved to the dead letter queue', async () => {
-      const queueStats = await sut['queue'].queueStats()
-      expect(queueStats).toEqual({dlq: 1, inflight: 0, queue:0, delayed: 0})
-    })
-  })
-
-  describe('when failing a message', () => {
-    const failMessage = new TestFailMessage(faker.random.uuid())
-    const correlationId = faker.random.uuid()
-    let queueStats: QueueStats
-
-    beforeAll(async () => {
-      await bus.publish(failMessage, new MessageAttributes({ correlationId }))
-      await sleep(2000)
-      queueStats = await sut['queue'].queueStats()
-    })
-    afterAll(async () => {
-      await sut['queue'].destroyQueue()
-    })
-
-    it('it should be moved to the dead letter queue', () => {
-      expect(queueStats).toEqual({dlq: 1, inflight: 0, queue:0, delayed: 0})
+      const testCommand = new TestCommand(uuid.v4(), new Date())
+      const messageOptions: MessageAttributes = {
+        correlationId: uuid.v4(),
+        attributes: {
+          attribute1: 'a',
+          attribute2: 1
+        },
+        stickyAttributes: {
+          attribute1: 'b',
+          attribute2: 2
+        }
+      }
+      // expect it to try 3 times before failing
+      await expect(bus.send(testCommand, messageOptions)).rejects.toThrow(/^Failed to publish message.*/)
+      expect(queuePushSpy).toHaveBeenCalledTimes(3)
+      queuePushSpy.mockClear()
     })
   })
-
-  describe('when a system message is received', () => {
-    const testMessage = new TestSystemMessage()
-    const serializedMessage = JSON.stringify(testMessage)
-    const message = { message : serializedMessage }
-    beforeAll(async () => {
-      await sut['queue'].publish(JSON.stringify(message))
-    })
-
-    afterAll(async () => {
-      await sut['queue'].destroyQueue()
-    })
-
-    it('it should handle the system message', async () => {
-      await sleep(2000)
-      handleChecker.verify(
-        h => h.check(It.isObjectWith({...testMessage}), It.isAny()),
-        Times.once()
-      )
-    })
-  })
-
 })
