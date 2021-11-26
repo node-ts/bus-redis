@@ -553,12 +553,12 @@
     "@types/yargs" "^16.0.0"
     chalk "^4.0.0"
 
-"@node-ts/bus-core@^1.0.0", "@node-ts/bus-core@^1.0.6":
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/@node-ts/bus-core/-/bus-core-1.0.6.tgz#cfb10e7c338889f0bdaf4c8c64b8726578607cf7"
-  integrity sha512-GwCbnqGiuqOAZgvTVrAgCWnDHFYDpz/HVAWOVIbvcl8ayg0CKAca0WwZ2wX56TTSuHmvYzpYvS3Cbqz6oNsowg==
+"@node-ts/bus-core@^1.0.12", "@node-ts/bus-core@^1.0.4":
+  version "1.0.12"
+  resolved "https://registry.yarnpkg.com/@node-ts/bus-core/-/bus-core-1.0.12.tgz#ec1e639cbcc12e9f1bbb325ab997d7433e71635e"
+  integrity sha512-FiyznrySJFtd9xwTkIwmA2lvZJpITsOgKzezzXyf4/pRUfgPF4SRJ1IIaWx4wavQwUznXnDPeJ6Nwjpxom7Avg==
   dependencies:
-    "@node-ts/bus-messages" "^1.0.3"
+    "@node-ts/bus-messages" "^1.0.4"
     debug "^4.3.1"
     reflect-metadata "^0.1.13"
     serialize-error "^8.1.0"
@@ -572,20 +572,20 @@
   dependencies:
     tslib "^1.13.0"
 
-"@node-ts/bus-messages@^1.0.3":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@node-ts/bus-messages/-/bus-messages-1.0.3.tgz#71623b27ec9f0b99a62730ab0b4065ada94fb3ac"
-  integrity sha512-ULZoalaPOpODWhaQH903n0JACdug9/5T5OQLlqOtrq7Lws6LJTdF3VRJCWFZ9f9VM+K0gHGIanGw6LiLz1MECA==
+"@node-ts/bus-messages@^1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@node-ts/bus-messages/-/bus-messages-1.0.4.tgz#c951f390dd1c1c642d732d13ef51ed3b4a2d3ddd"
+  integrity sha512-cixoFXLo2LdpZoJrkPciWl2f11+yN9wnh8eMTvhq7m+8plYykn8sddZHYpg7ca3HOB7W3bdxOjzoB53203OfZQ==
   dependencies:
     tslib "^1.13.0"
 
-"@node-ts/bus-test@^0.0.10":
-  version "0.0.10"
-  resolved "https://registry.yarnpkg.com/@node-ts/bus-test/-/bus-test-0.0.10.tgz#b1bbfaed6a280fccea183cdf2fb95e6fa5a99fbd"
-  integrity sha512-ZuYi6mI4CeaB6W9d4OvaGI8i3i6L8TQQuAmpF3oXEHn7Z680gNu3v4vmmqT3ZdbImNUMQ75tnLpcDQonPGPrEw==
+"@node-ts/bus-test@^0.0.16":
+  version "0.0.16"
+  resolved "https://registry.yarnpkg.com/@node-ts/bus-test/-/bus-test-0.0.16.tgz#a46c3a2bac6f8a8f5c18f5c4e131ddba669840a0"
+  integrity sha512-ji48s92PJ2oCUlyc/yKzFkGaoFGkZBTsF7eHp0TH05VX9jnc2SLrnnI+pb7WlF8xAsL0qxiBpk16Fc8h1Yfj5w==
   dependencies:
-    "@node-ts/bus-core" "^1.0.6"
-    "@node-ts/bus-messages" "^1.0.3"
+    "@node-ts/bus-core" "^1.0.12"
+    "@node-ts/bus-messages" "^1.0.4"
     "@node-ts/code-standards" "^0.0.10"
     "@types/faker" "^5.5.7"
     "@types/node" "^14.14.31"
@@ -2866,10 +2866,10 @@ mkdirp@^0.5.3:
   dependencies:
     minimist "^1.2.5"
 
-modest-queue@^0.4.1:
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/modest-queue/-/modest-queue-0.4.1.tgz#2a21e7f1e9bdf807ca00ed16f01c0a9349aaa1f8"
-  integrity sha512-SLkGUr3qTrxKk7Rd6WzojKzn09gb8DH3WV92DKLHyioNgkfPdmB+Xi/yfbVaLVP6V/xhZswODljwSg8ktp4KeA==
+modest-queue@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/modest-queue/-/modest-queue-0.5.0.tgz#180db1b45ad63bb603b559ebf907da5d12fe53d3"
+  integrity sha512-cBgS0PSgCryJdgmdUei63llLzAzxg8FChFlsf0DwI4iW1D6lk8WRQXr29KwcU0j57thZ3z9joQ3Yc58hv4hL1Q==
   dependencies:
     class-transformer "^0.4.0"
     ioredis "^4.27.7"
