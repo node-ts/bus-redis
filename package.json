@@ -1,7 +1,7 @@
 {
   "name": "@node-ts/bus-redis",
   "description": "A redis transport adapter for @node-ts/bus-core.",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -33,8 +33,8 @@
     "@node-ts/code-standards": "^0.0.10",
     "@types/faker": "^4.1.5",
     "@types/ioredis": "^4.26.6",
-    "@types/uuid": "^3.4.4",
     "@types/jest": "^27.0.2",
+    "@types/uuid": "^3.4.4",
     "faker": "^4.1.0",
     "reflect-metadata": "^0.1.13",
     "typemoq": "^2.1.0",
