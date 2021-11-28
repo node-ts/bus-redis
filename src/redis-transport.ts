@@ -41,7 +41,6 @@ export class RedisTransport implements Transport<QueueMessage> {
   /**
    * A Redis transport adapter for @node-ts/bus.
    * @param configuration Settings used when connecting to redis and controlling this transports behavior
-   * @param connectionFactory A callback that creates a new connection to Redis
    */
   constructor (
     private readonly configuration: RedisTransportConfiguration
@@ -70,7 +69,8 @@ export class RedisTransport implements Transport<QueueMessage> {
       visibilityTimeout: this.configuration.visibilityTimeout ?? defaultVisibilityTimeout,
       maxAttempts: this.configuration.maxRetries ?? DEFAULT_MAX_RETRIES,
       withScheduler: this.configuration.withScheduler,
-      withDelayedScheduler: false
+      withDelayedScheduler: false,
+      retryStrategy: this.coreDependencies.retryStrategy
     })
     await this.queue.initialize()
 
