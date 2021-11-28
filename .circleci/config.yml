@@ -46,7 +46,7 @@ jobs:
           command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/repo/.npmrc
       - run:
           name: Publish
-          command: npx lerna publish from-package --yes
+          command: npm publish --access public
 
 workflows:
   version: 2
